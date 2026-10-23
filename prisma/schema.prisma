@@ -1,0 +1,132 @@
+// SQLite for local dev. For production switch provider to "postgresql" and set DATABASE_URL.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  currency     String    @default("INR")
+  isAdmin      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  cards        UserCard[]
+  expenses     Expense[]
+  customCards  CardProduct[]
+  credits      RewardCredit[]
+}
+
+model CardProduct {
+  id                 String       @id
+  bank               String
+  name               String
+  network            String
+  tier               String
+  annualFee          Float
+  joiningFee         Float
+  feeWaiverSpend     Float?
+  forexMarkup        Float
+  pointValue         Float
+  rewardUnit         String
+  /// comma-separated category keys
+  excludedCategories String       @default("")
+  /// JSON: [{ label, value }]
+  benefits           String       @default("[]")
+  colorFrom          String
+  colorTo            String
+  sourceUrl          String
+  lastVerified       String
+  /// plain-language caveats (e.g. blended spend-threshold rates)
+  notes              String?
+  /// null = public catalog card; set = a user's own "not listed" card, visible only to them
+  ownerId            String?
+  owner              User?        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rules              RewardRule[]
+  userCards          UserCard[]
+
+  @@index([ownerId])
+}
+
+model RewardRule {
+  id            String      @id @default(cuid())
+  cardProductId String
+  cardProduct   CardProduct @relation(fields: [cardProductId], references: [id], onDelete: Cascade)
+  label         String
+  /// comma-separated lists; empty = any
+  categories    String      @default("")
+  merchants     String      @default("")
+  channels      String      @default("")
+  rateType      String // "percent" | "points"
+  rate          Float
+  perAmount     Float       @default(100)
+  /// cap in ₹ of reward value
+  capValue      Float?
+  capPeriod     String? // month | quarter | year
+  capGroup      String?
+  minTxn        Float?
+  priority      Int         @default(0)
+}
+
+model UserCard {
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardProductId    String
+  cardProduct      CardProduct @relation(fields: [cardProductId], references: [id])
+  nickname         String?
+  last4            String?
+  creditLimit      Float       @default(0)
+  statementDay     Int         @default(1)
+  dueDay           Int         @default(20)
+  anniversaryMonth Int         @default(1)
+  perksValue       Float       @default(0)
+  /// true when added via Quick add and limit/billing days haven't been filled in yet
+  needsDetails     Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  expenses         Expense[]
+  credits          RewardCredit[]
+}
+
+/// Rewards the bank actually paid out (cashback credited, points posted), to compare with what the engine expected.
+model RewardCredit {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userCardId String?
+  userCard   UserCard? @relation(fields: [userCardId], references: [id], onDelete: SetNull)
+  date       DateTime
+  /// ₹ value: the cashback amount, or points × the card's point value
+  amount     Float
+  kind       String // cashback | points | miles
+  /// number of points/miles when kind != cashback
+  points     Float?
+  note       String?
+  source     String    @default("manual") // manual | import
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, date])
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Float
+  date        DateTime
+  category    String
+  subcategory String?
+  merchant    String?
+  channel     String // online | offline | international
+  note        String?
+  userCardId  String?
+  userCard    UserCard? @relation(fields: [userCardId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, date])
+}
