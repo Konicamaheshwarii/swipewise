@@ -198,7 +198,7 @@ How CRED itself gets data, from public and partly dated sources:
 
 ## Fastest way to test with your own cards (personal / pilot)
 
-*Added 21 Oct 2026. Question: "For testing, how can I get my own 6–10 cards (Axis MY Zone RuPay, HSBC Live+, SBI Cashback, PhonePe SBI SELECT BLACK, HDFC/ICICI…) and monthly spend into Swipewise without typing them in?" This builds on sections 3–5 and only covers what is different when the only user is you (or a handful of testers).*
+*Added 21 Oct 2026. Question: "For testing, how can I get my own cards (6–10 cards across several issuers) and monthly spend into Swipewise without typing them in?" This builds on sections 3–5 and only covers what is different when the only user is you (or a handful of testers).*
 
 ### Ranked options, fastest first
 
